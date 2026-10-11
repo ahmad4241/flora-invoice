@@ -113,8 +113,11 @@ textarea{resize:vertical;min-height:70px;border:1px dashed var(--line);border-ra
   .tools,.del,.add,.noprint{display:none!important}
   .stage{max-width:none;height:auto!important}
   html,body{height:auto}
-  .sheet{position:static;transform:none!important;box-shadow:none;width:100%;height:auto;min-height:235mm;padding:30px 36px 22px;gap:22px;break-inside:avoid;page-break-inside:avoid}
-  .foot{margin-top:auto}
+  .sheet{position:static;transform:none!important;box-shadow:none;width:100%;height:auto;min-height:0;padding:24px 32px 16px;gap:20px;overflow:visible}
+  .head,.client,table,tr,.bottom,.sum,.foot{break-inside:avoid;page-break-inside:avoid}
+  .notes.empty textarea{display:none}
+  .leaf{top:50%}
+  .foot{margin-top:6px}
   .size-tag{display:none}
   @page{size:A4;margin:0}
   input,textarea{border-color:transparent!important}
