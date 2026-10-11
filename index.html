@@ -156,6 +156,8 @@ textarea{resize:vertical;min-height:70px;border:1px dashed var(--line);border-ra
 .printbtn{background:var(--green);color:#fff;border-color:var(--green);font-weight:600}
 .printbtn:hover{background:var(--green-2)}
 @media print{::placeholder{color:transparent!important}.notes.empty{visibility:hidden}}
+.tools button{font-size:12px;padding:6px 12px;border-radius:7px}
+.tools .grp{gap:5px}
 </style>
 </head>
 <body>
@@ -164,13 +166,13 @@ textarea{resize:vertical;min-height:70px;border:1px dashed var(--line);border-ra
 <div class="tools" dir="rtl">
   <div class="grp">
     <button id="lang" type="button" class="langbtn">English</button>
-    <button id="cur-iqd" class="on" type="button" data-en="IQD">دينار IQD</button>
-    <button id="cur-usd" type="button" data-en="USD">دولار USD</button>
+    <button id="cur-iqd" class="on" type="button" >IQD</button>
+    <button id="cur-usd" type="button" >USD</button>
   </div>
   <div class="grp">
-    <button id="print" type="button" class="printbtn" data-en="Print / Save PDF">طباعة / حفظ PDF</button>
-    <button id="clear" type="button" data-en="New invoice (clear)">فاتورة جديدة (تفريغ)</button>
-    <button id="confirmClear" type="button" hidden style="border-color:var(--plum);color:var(--plum)" data-en="Sure? Tap to clear">متأكد؟ اضغط للتفريغ</button>
+    <button id="print" type="button" class="printbtn" >PDF</button>
+    <button id="clear" type="button" >New</button>
+    <button id="confirmClear" type="button" hidden style="border-color:var(--plum);color:var(--plum)" data-en="Clear all?">مسح الكل؟</button>
   </div>
 </div>
 
