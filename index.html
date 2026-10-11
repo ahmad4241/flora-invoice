@@ -169,6 +169,15 @@ textarea{resize:vertical;min-height:70px;border:1px dashed var(--line);border-ra
 .tools button{font-size:12px;padding:6px 12px;border-radius:7px}
 .tools .grp{gap:5px}
 a[href^="tel"],a[href^="mailto"],a[x-apple-data-detectors]{color:inherit!important;text-decoration:none!important;font:inherit!important}
+.pv{position:fixed;inset:0;z-index:50;background:rgba(20,30,22,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.pv[hidden]{display:none}
+.pv-box{background:#fff;border-radius:16px;width:min(100%,460px);max-height:100%;display:flex;flex-direction:column;gap:12px;padding:14px;box-shadow:0 20px 60px rgba(0,0,0,.3);font-family:var(--f)}
+.pv-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.pv-head b{font-size:15px;color:var(--green)}
+.pv-page{flex:1;min-height:0;overflow:auto;border:1px solid var(--line);border-radius:10px;background:#f6f7f5;display:flex;justify-content:center}
+.pv-page img{width:100%;height:auto;display:block}
+.pv-go{width:100%;padding:13px;font-size:15px;border-radius:10px}
+@media print{.pv{display:none!important}}
 </style>
 </head>
 <body>
@@ -263,6 +272,14 @@ a[href^="tel"],a[href^="mailto"],a[x-apple-data-detectors]{color:inherit!importa
 </main>
 </div>
 
+<div id="pv" class="pv" hidden>
+  <div class="pv-box" role="dialog" aria-modal="true" aria-labelledby="pv-title">
+    <div class="pv-head"><b id="pv-title">الفاتورة جاهزة</b><button id="pv-close" type="button">إغلاق</button></div>
+    <div class="pv-page"><img id="pv-img" alt=""></div>
+    <button id="pv-share" type="button" class="printbtn pv-go">طباعة / مشاركة</button>
+  </div>
+</div>
+
 <script>
 (function(){
   const $=id=>document.getElementById(id);
@@ -329,6 +346,26 @@ a[href^="tel"],a[href^="mailto"],a[x-apple-data-detectors]{color:inherit!importa
   $('lang').onclick=()=>setLang(!EN);
   // PDF: build a real A4 file (no browser header/footer, URL or date)
   const loadJS=src=>new Promise((ok,no)=>{if(document.querySelector('script[src="'+src+'"]'))return ok();const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s)});
+  let pdfFile=null,pdfURL=null;
+  function showPDF(blob,name,img){
+    if(pdfURL)URL.revokeObjectURL(pdfURL);
+    pdfURL=URL.createObjectURL(blob);
+    try{pdfFile=new File([blob],name,{type:'application/pdf'})}catch(e){pdfFile=null}
+    $('pv-img').src=img;$('pv').dataset.name=name;
+    $('pv-title').textContent=EN?'Invoice ready':'الفاتورة جاهزة';
+    $('pv-share').textContent=EN?'Print / Share':'طباعة / مشاركة';
+    $('pv-close').textContent=EN?'Close':'إغلاق';
+    $('pv').dir=EN?'ltr':'rtl';
+    $('pv').hidden=false;document.body.style.overflow='hidden';
+  }
+  function closePDF(){$('pv').hidden=true;document.body.style.overflow=''}
+  async function sharePDF(){
+    const name=$('pv').dataset.name;
+    if(pdfFile&&navigator.canShare&&navigator.canShare({files:[pdfFile]})){
+      try{await navigator.share({files:[pdfFile],title:name});return}catch(e){if(e&&e.name==='AbortError')return}
+    }
+    const a=document.createElement('a');a.href=pdfURL;a.download=name;document.body.appendChild(a);a.click();a.remove();
+  }
   async function makePDF(){
     const btn=$('print'),label=btn.textContent;btn.disabled=true;btn.textContent='…';
     try{
@@ -364,11 +401,15 @@ a[href^="tel"],a[href^="mailto"],a[x-apple-data-detectors]{color:inherit!importa
       const pdf=new jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
       pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,210,297);
       const d=$('date').value||new Date().toISOString().slice(0,10);
-      pdf.save('Flora-Invoice-'+d+'.pdf');
-    }catch(e){console.error(e);window.print()}
+      const name='Flora-Invoice-'+d+'.pdf';
+      const blob=pdf.output('blob');
+      showPDF(blob,name,canvas.toDataURL('image/jpeg',0.8));
+    }catch(e){console.error(e);alert(EN?'Could not create the PDF, please try again.':'ما قدرنا نعمل ملف PDF، جرّب مرة ثانية.')}
     finally{btn.disabled=false;btn.textContent=label}
   }
   $('print').onclick=makePDF;
+  $('pv-share').onclick=sharePDF;$('pv-close').onclick=closePDF;
+  $('pv').addEventListener('click',e=>{if(e.target===$('pv'))closePDF()});
   $('add').onclick=()=>addRow();
   function setCur(c){cur=c;$('cur-iqd').classList.toggle('on',c==='IQD');$('cur-usd').classList.toggle('on',c==='USD');calc()}
   $('cur-iqd').onclick=()=>setCur('IQD');$('cur-usd').onclick=()=>setCur('USD');
@@ -387,8 +428,14 @@ a[href^="tel"],a[href^="mailto"],a[x-apple-data-detectors]{color:inherit!importa
     $('dateTxt').dir='ltr';$('dateTxt').textContent=p(d)+' / '+p(m)+' / '+y;}
   $('date').addEventListener('change',showDate);$('date').addEventListener('input',showDate);
   $('date').valueAsDate=new Date();showDate();
-  $('disc').value=0;$('notes').value='';$('c-name').value='شركة الأمل للتجارة';$('c-person').value='أحمد علي';$('c-email').value='info@alamal.iq';$('c-phone').value='07801234567';calc();
-  sample.forEach(addRow);
+  function fillSample(){
+    $('disc').value=0;$('notes').value='';$('c-name').value='شركة الأمل للتجارة';$('c-person').value='أحمد علي';$('c-email').value='info@alamal.iq';$('c-phone').value='07801234567';
+    $('rows').innerHTML='';sample.forEach(addRow);$('date').valueAsDate=new Date();showDate();
+    if(EN)swapValues(true);calc();notesState();
+  }
+  fillSample();
+  // Safari can refill fields with old/empty values after load: put the example back
+  window.addEventListener('pageshow',e=>{if(e.persisted){calc();return}setTimeout(fillSample,0)});
   try{if(localStorage.getItem('flora-lang')==='en')setLang(true)}catch(e){}
 })();
 </script>
