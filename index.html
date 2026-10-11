@@ -120,7 +120,8 @@ textarea{resize:vertical;min-height:70px;border:1px dashed var(--line);border-ra
   .head,.client,table,tr,.bottom,.sum,.foot{break-inside:avoid;page-break-inside:avoid}
   .notes.empty textarea{display:none}
   .leaf{top:50%}
-  .foot{margin-top:6px}
+  .sheet>footer.foot{position:fixed;left:30px;right:30px;bottom:6px;margin:0;background:#fff;z-index:2}
+  .sheet{padding-bottom:70px}
   .size-tag{display:none}
   @page{size:A4;margin:0}
   input,textarea{border-color:transparent!important}
