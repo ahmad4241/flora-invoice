@@ -327,7 +327,48 @@ a[href^="tel"],a[href^="mailto"],a[x-apple-data-detectors]{color:inherit!importa
     try{localStorage.setItem('flora-lang',en?'en':'ar')}catch(e){}
   }
   $('lang').onclick=()=>setLang(!EN);
-  $('print').onclick=()=>window.print();
+  // PDF: build a real A4 file (no browser header/footer, URL or date)
+  const loadJS=src=>new Promise((ok,no)=>{if(document.querySelector('script[src="'+src+'"]'))return ok();const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=no;document.head.appendChild(s)});
+  async function makePDF(){
+    const btn=$('print'),label=btn.textContent;btn.disabled=true;btn.textContent='…';
+    try{
+      await Promise.all([loadJS('lib/html2canvas.min.js'),loadJS('lib/jspdf.umd.min.js')]);
+      if(document.fonts&&document.fonts.ready)await document.fonts.ready;
+      notesState();
+      const src=$('sheet');
+      const fields=[...src.querySelectorAll('input,textarea')];
+      const prevT=src.style.transform,sy=window.scrollY;src.style.transform='none';window.scrollTo(0,0);
+      let canvas;
+      try{canvas=await html2canvas(src,{scale:3,backgroundColor:'#ffffff',useCORS:true,logging:false,width:794,height:1123,scrollX:0,scrollY:0,
+        onclone:(doc)=>{
+          const sh=doc.getElementById('sheet');
+          sh.style.transform='none';sh.style.position='relative';sh.style.left='0';sh.style.right='0';sh.style.boxShadow='none';
+          const st=doc.createElement('style');
+          st.textContent='.del,.add,.noprint{display:none!important}.dpick{border-color:transparent!important}.notes.empty{visibility:hidden}'+(EN?'':'#sheet *{letter-spacing:0!important}');
+          doc.head.appendChild(st);
+          const cl=[...sh.querySelectorAll('input,textarea')];
+          cl.forEach((el,i)=>{
+            const o=fields[i];if(!o)return;
+            if(o.type==='date'){el.remove();return}
+            const cs=getComputedStyle(o),sp=doc.createElement('div');
+            sp.textContent=o.value;
+            ['fontFamily','fontSize','fontWeight','color','textAlign','lineHeight','paddingTop','paddingBottom','paddingLeft','paddingRight','letterSpacing'].forEach(k=>sp.style[k]=cs[k]);
+            sp.style.width=cs.width;sp.style.minHeight=cs.height;sp.style.boxSizing='border-box';sp.style.whiteSpace=o.tagName==='TEXTAREA'?'pre-wrap':'nowrap';
+            sp.style.overflow='hidden';sp.style.direction=cs.direction;sp.className=el.className;sp.style.border='0';
+            if(!EN)sp.style.letterSpacing='0';
+            el.replaceWith(sp);
+          });
+        }});}
+      finally{src.style.transform=prevT;fit();window.scrollTo(0,sy)}
+      const {jsPDF}=window.jspdf;
+      const pdf=new jsPDF({unit:'mm',format:'a4',orientation:'portrait',compress:true});
+      pdf.addImage(canvas.toDataURL('image/jpeg',0.95),'JPEG',0,0,210,297);
+      const d=$('date').value||new Date().toISOString().slice(0,10);
+      pdf.save('Flora-Invoice-'+d+'.pdf');
+    }catch(e){console.error(e);window.print()}
+    finally{btn.disabled=false;btn.textContent=label}
+  }
+  $('print').onclick=makePDF;
   $('add').onclick=()=>addRow();
   function setCur(c){cur=c;$('cur-iqd').classList.toggle('on',c==='IQD');$('cur-usd').classList.toggle('on',c==='USD');calc()}
   $('cur-iqd').onclick=()=>setCur('IQD');$('cur-usd').onclick=()=>setCur('USD');
