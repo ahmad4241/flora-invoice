@@ -374,6 +374,35 @@ a[href^="tel"],a[href^="mailto"],a[x-apple-data-detectors]{color:inherit!importa
       notesState();
       const src=$('sheet');
       const fields=[...src.querySelectorAll('input,textarea')];
+      // html2canvas draws text word-by-word and on iOS can split Arabic words, so letters overlap.
+      // Draw textarea text ourselves with the browser's own shaping and pass it in as an image.
+      const S=3,textImgs=new Map();
+      try{for(const [i,o] of fields.entries()){
+        if(o.tagName!=='TEXTAREA'||!o.value.trim())continue;
+        const cs=getComputedStyle(o),fs=parseFloat(cs.fontSize)||14;
+        const font=cs.fontWeight+' '+fs+'px '+cs.fontFamily;
+        if(document.fonts&&document.fonts.load){try{await document.fonts.load(font,o.value)}catch(e){}}
+        const w=Math.max(1,o.clientWidth-(parseFloat(cs.paddingLeft)||0)-(parseFloat(cs.paddingRight)||0));
+        const lh=parseFloat(cs.lineHeight)||fs*1.6;
+        const m=document.createElement('canvas').getContext('2d');m.font=font;
+        const lines=[];
+        o.value.replace(/\s+$/,'').split('\n').forEach(par=>{
+          let line='';
+          par.split(/(\s+)/).forEach(tok=>{
+            const t=line+tok;
+            if(line.trim()&&tok.trim()&&m.measureText(t).width>w){lines.push(line.trimEnd());line=tok}else line=t;
+          });
+          lines.push(line.trimEnd());
+        });
+        const c=document.createElement('canvas');c.width=Math.ceil(w*S);c.height=Math.ceil(lines.length*lh*S);
+        const x=c.getContext('2d');x.scale(S,S);x.font=font;x.fillStyle=cs.color;x.textBaseline='middle';
+        const rtl=cs.direction==='rtl';x.direction=rtl?'rtl':'ltr';
+        const al=cs.textAlign,right=al==='right'||(rtl&&(al==='start'||al==='justify'))||(!rtl&&al==='end');
+        x.textAlign=al==='center'?'center':right?'right':'left';
+        const px=al==='center'?w/2:right?w:0;
+        lines.forEach((l,k)=>x.fillText(l,px,lh*(k+.5)));
+        textImgs.set(i,{src:c.toDataURL('image/png'),w,h:lines.length*lh});
+      }}catch(e){console.error(e);textImgs.clear()}
       const prevT=src.style.transform,sy=window.scrollY;src.style.transform='none';window.scrollTo(0,0);
       let canvas;
       try{canvas=await html2canvas(src,{scale:3,backgroundColor:'#ffffff',useCORS:true,logging:false,width:794,height:1123,scrollX:0,scrollY:0,
@@ -393,6 +422,13 @@ a[href^="tel"],a[href^="mailto"],a[x-apple-data-detectors]{color:inherit!importa
             sp.style.width=cs.width;sp.style.minHeight=cs.height;sp.style.boxSizing='border-box';sp.style.whiteSpace=o.tagName==='TEXTAREA'?'pre-wrap':'nowrap';
             sp.style.overflow='hidden';sp.style.direction=cs.direction;sp.className=el.className;sp.style.border='0';
             if(!EN)sp.style.letterSpacing='0';
+            const ti=textImgs.get(i);
+            if(ti){
+              sp.textContent='';
+              const im=doc.createElement('img');im.src=ti.src;
+              im.style.cssText='display:block;width:'+ti.w+'px;height:'+ti.h+'px;max-width:none';
+              sp.appendChild(im);
+            }
             el.replaceWith(sp);
           });
         }});}
