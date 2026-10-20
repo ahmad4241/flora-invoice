@@ -1,9 +1,20 @@
 # Flora Invoice · فاتورة فلورا
 
-Invoice tool for Flora (فلورا): fill in the customer and items, totals calculate automatically, then print or save as PDF on A4.
+Invoice tool made for **Flora**, a shop in Iraq. Staff fill in the customer and the items, the totals calculate automatically, and the invoice prints or saves as a PDF on A4.
 
-- Arabic / English toggle
-- IQD / USD
-- Address: نهاية شارع الدرة، مقابل مجمع المروج السكني · 07741337337
+## Features
 
-Single file: `index.html`.
+- Arabic and English, with a right-to-left layout for Arabic
+- Iraqi dinar (IQD) and US dollar (USD)
+- Automatic line totals and grand total
+- Print or download as PDF on A4 (jsPDF and html2canvas)
+- Remembers the chosen language between visits
+- Works offline in any browser, no server or install needed
+
+## Built with
+
+HTML, CSS and plain JavaScript in a single `index.html`, plus two libraries in `lib/` for the PDF export. Designed and built by [Ahmad Alhallak](https://ahmadalhallak.com) for a client, with AI assistance (Claude).
+
+## Run it
+
+Open `index.html` in a browser. Keep the `lib` folder next to it.
